@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} — Secure Student Portal{% endblock %}
+{% block content %}
+<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;">
+  <div style="text-align:center;">
+    <div class="mono alert" style="font-size:4rem;font-weight:700;">{{ code }}</div>
+    <div class="mono muted" style="margin-top:0.5rem;">{{ msg }}</div>
+    <a href="{{ url_for('index') }}" class="btn btn-terminal" style="margin-top:1.5rem;">← Return to portal</a>
+  </div>
+</div>
+{% endblock %}

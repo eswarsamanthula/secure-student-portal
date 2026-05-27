@@ -1,0 +1,471 @@
+{% extends "base.html" %}
+{% block title %}Admin SOC — {{ org.name }}{% endblock %}
+{% block content %}
+<div style="padding:1.25rem 1.5rem;">
+
+  <!-- Org header -->
+  <div style="border:1px solid var(--accent);background:hsl(211 100% 52%/0.06);padding:0.75rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;color:var(--accent);letter-spacing:0.1em;">// Organization</div>
+      <div style="font-size:1.1rem;font-weight:600;margin-top:0.15rem;">{{ org.name }}</div>
+    </div>
+    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted-f);text-align:right;">
+      <div>Created {{ org.created_at[:10] }}</div>
+      <div style="color:var(--safe);">● Isolated org</div>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.6rem;margin-bottom:1.25rem;">
+    {% for label,val,col in [
+      ('Total Attacks',stats.total,'alert'),
+      ('SQL Injection',stats.sqli,'alert'),
+      ('XSS Attempts',stats.xss,'alert'),
+      ('Brute Force',stats.brute,'alert'),
+      ('File Attacks',stats.upload,'alert'),
+      ('Students',stats.students,'acc'),
+      ('Files',stats.files,'acc'),
+    ] %}
+    <div class="panel" style="padding:0.75rem;">
+      <div class="mono upper muted" style="font-size:0.58rem;margin-bottom:0.2rem;">{{ label }}</div>
+      <div class="mono {{ col }}" style="font-size:1.5rem;font-weight:700;">{{ val }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-list" style="grid-template-columns:repeat(5,1fr);margin-bottom:1rem;">
+    <a href="?tab=logs"     class="tab-btn {% if tab=='logs'     %}active{% endif %}">⚡ Attack Monitor</a>
+    <a href="?tab=users"    class="tab-btn {% if tab=='users'    %}active{% endif %}">○ My Students</a>
+    <a href="?tab=post"     class="tab-btn {% if tab=='post'     %}active{% endif %}">📢 Announcements</a>
+    <a href="?tab=messages" class="tab-btn {% if tab=='messages' %}active{% endif %}">✉ Messages</a>
+    <a href="?tab=settings" class="tab-btn {% if tab=='settings' %}active{% endif %}">⚙ Org Settings</a>
+  </div>
+
+  <!-- ══ ATTACK MONITOR ══ -->
+  <div style="display:{% if tab=='logs' %}block{% else %}none{% endif %};">
+
+    <!-- ── Feature 1: Attack Bar Chart ── -->
+    <div class="panel" style="margin-bottom:1rem;">
+      <div class="panel-title" style="justify-content:space-between;">
+        <span><span class="icon">📊</span> Attack Distribution Chart</span>
+        <span class="mono xs muted" id="refreshLabel">⏱ Last updated: <span id="lastUpdated">just now</span></span>
+      </div>
+      <div style="padding:0.75rem 0.25rem 0.25rem;">
+        {% set bar_colors = ['#ef4444','#f97316','#a855f7','#ec4899','#6b7280'] %}
+        {% set max_val = [chart_values|max, 1]|max %}
+        {% for i in range(chart_labels|length) %}
+          {% set val   = chart_values[i] %}
+          {% set pct   = (val / max_val * 100)|round|int %}
+          {% set color = bar_colors[i] %}
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;">
+            <div style="font-family:var(--mono);font-size:0.68rem;color:var(--muted-f);width:100px;flex-shrink:0;text-align:right;">
+              {{ chart_labels[i] }}
+            </div>
+            <div style="flex:1;background:var(--muted);height:26px;position:relative;overflow:hidden;">
+              <div style="width:{{ pct }}%;height:100%;background:{{ color }};
+                          transition:width 1.2s cubic-bezier(.4,0,.2,1);
+                          box-shadow:0 0 12px {{ color }}55;">
+              </div>
+              {% if pct > 10 %}
+              <div style="position:absolute;top:50%;left:8px;transform:translateY(-50%);
+                          font-family:var(--mono);font-size:0.62rem;font-weight:700;
+                          color:#fff;pointer-events:none;">
+                {{ val }}
+              </div>
+              {% endif %}
+            </div>
+            <div style="font-family:var(--mono);font-size:0.75rem;font-weight:700;
+                        color:{{ color }};width:32px;text-align:right;flex-shrink:0;">{{ val }}</div>
+            <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted-f);
+                        width:38px;text-align:right;flex-shrink:0;">
+              {% if stats.total > 0 %}{{ (val/stats.total*100)|round|int }}%{% else %}0%{% endif %}
+            </div>
+          </div>
+        {% endfor %}
+        <div style="border-top:1px solid var(--border);padding-top:0.5rem;margin-top:0.25rem;
+                    display:flex;justify-content:space-between;align-items:center;
+                    font-family:var(--mono);font-size:0.68rem;">
+          <span style="color:var(--muted-f);">● <span id="liveStatus" style="color:var(--safe);">Live monitoring</span></span>
+          <span style="color:var(--muted-f);">Total blocked: <strong style="color:var(--fg);" id="chartTotal">{{ stats.total }}</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FEATURE 2: Email Notification Visual ── -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;" class="mob-grid">
+
+      <!-- Email Status Card -->
+      <div style="border:1px solid {% if mail_enabled %}rgba(34,197,94,.35){% else %}rgba(239,68,68,.25){% endif %};background:{% if mail_enabled %}rgba(34,197,94,.06){% else %}rgba(239,68,68,.04){% endif %};padding:0.85rem 1rem;">
+        <div style="display:flex;align-items:center;gap:0.65rem;margin-bottom:0.6rem;">
+          <span style="font-size:1.3rem;">{% if mail_enabled %}📧{% else %}🔕{% endif %}</span>
+          <div>
+            <div style="font-family:var(--mono);font-size:0.78rem;font-weight:700;color:{% if mail_enabled %}var(--safe){% else %}var(--alert){% endif %};">
+              {% if mail_enabled %}● Email Alerts ACTIVE{% else %}○ Email Alerts OFF{% endif %}
+            </div>
+            <div style="font-family:var(--mono);font-size:0.63rem;color:var(--muted-f);margin-top:0.15rem;">
+              {% if mail_enabled %}To: <span style="color:var(--fg);">{{ mail_sender }}</span>{% else %}Set MAIL_ENABLED=True in .env{% endif %}
+            </div>
+          </div>
+        </div>
+        {% if mail_enabled %}
+        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted-f);line-height:1.75;border-top:1px solid rgba(34,197,94,.2);padding-top:0.5rem;">
+          <div>✓ Real email sent on every attack detected</div>
+          <div>✓ Gmail SMTP · HTML formatted alerts</div>
+          <div>✓ OTP password reset emails active</div>
+        </div>
+        {% else %}
+        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted-f);line-height:1.75;border-top:1px solid rgba(239,68,68,.2);padding-top:0.5rem;">
+          <div>Set MAIL_ENABLED=True in .env</div>
+          <div>Set MAIL_SENDER=your_email in .env</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Email Log -->
+      <div style="border:1px solid var(--border);background:var(--card);padding:0.85rem 1rem;display:flex;flex-direction:column;">
+        <div style="font-family:var(--mono);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted-f);margin-bottom:0.5rem;display:flex;justify-content:space-between;">
+          <span>📨 Email Alert Log</span>
+          <span style="font-size:0.6rem;">Last 20</span>
+        </div>
+        <div style="flex:1;max-height:110px;overflow-y:auto;">
+          {% if email_logs %}
+            {% for e in email_logs %}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.28rem 0;border-bottom:1px solid hsl(0 0% 20%/0.3);font-family:var(--mono);font-size:0.63rem;">
+              <div style="display:flex;align-items:center;gap:0.4rem;min-width:0;">
+                <span style="color:{% if 'failed' in e.status %}var(--alert){% else %}var(--safe){% endif %};flex-shrink:0;">{% if 'failed' in e.status %}✗{% else %}✓{% endif %}</span>
+                <span style="color:var(--muted-f);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ e.attack_type }}</span>
+              </div>
+              <span style="color:var(--muted-f);flex-shrink:0;margin-left:0.5rem;">{{ e.timestamp[11:16] }}</span>
+            </div>
+            {% endfor %}
+          {% else %}
+          <div style="font-family:var(--mono);font-size:0.63rem;color:var(--muted-f);text-align:center;padding:0.75rem 0;">
+            No emails sent yet.<br><span style="font-size:0.6rem;">Emails send automatically on attacks.</span>
+          </div>
+          {% endif %}
+        </div>
+        <form method="POST" action="{{ url_for('test_email_alert') }}" style="margin-top:0.6rem;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-sm" style="width:100%;font-size:0.65rem;background:var(--muted);border:1px solid var(--border);color:var(--muted-f);">
+            📧 Send Test Alert Email
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Attack Log table -->
+    <div class="panel">
+      <div class="panel-title" style="justify-content:space-between;flex-wrap:wrap;gap:0.5rem;">
+        <span>
+          <span class="icon">⚡</span> Real-time Attack Log
+          <span id="totalBadge" class="mono xs" style="color:var(--alert);margin-left:0.35rem;">{{ stats.total }} total</span>
+        </span>
+        <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">
+          <form method="GET" action="{{ url_for('admin_dashboard') }}" style="display:flex;gap:0.3rem;">
+            <input type="hidden" name="tab" value="logs">
+            <input type="text" name="q" value="{{ search }}" placeholder="Search type, IP, user..."
+                   style="padding:0.3rem 0.6rem;font-size:0.7rem;width:190px;">
+            <button type="submit" class="btn btn-sm btn-ghost">⌕</button>
+            {% if search %}<a href="?tab=logs" class="btn btn-sm btn-ghost">✕ Clear</a>{% endif %}
+          </form>
+          <a href="{{ url_for('export_logs') }}" class="btn btn-sm btn-safe">↓ Export CSV</a>
+          <form method="POST" action="{{ url_for('clear_logs') }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-alert" onclick="return confirm('Clear all logs for this org?')">Clear Logs</button>
+          </form>
+        </div>
+      </div>
+      {% if logs %}
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Attack Type</th><th>IP</th><th>Username</th><th>Endpoint</th><th>Payload</th><th>Time</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for log in logs %}
+            <tr>
+              <td>{{ log.id }}</td>
+              <td class="hl">
+                {% if 'SQL' in log.attack_type %}<span style="color:#ef4444;">{{ log.attack_type }}</span>
+                {% elif 'XSS' in log.attack_type %}<span style="color:#f97316;">{{ log.attack_type }}</span>
+                {% elif 'Brute' in log.attack_type or 'Login' in log.attack_type %}<span style="color:#a855f7;">{{ log.attack_type }}</span>
+                {% elif 'Upload' in log.attack_type or 'Path' in log.attack_type %}<span style="color:#ec4899;">{{ log.attack_type }}</span>
+                {% else %}<span style="color:var(--muted-f);">{{ log.attack_type }}</span>{% endif %}
+              </td>
+              <td class="mono xs">{{ log.ip_address or '—' }}</td>
+              <td>{{ log.username or '—' }}</td>
+              <td class="mono xs">{{ log.endpoint or '—' }}</td>
+              <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--alert);" title="{{ log.payload }}">{{ log.payload or '—' }}</td>
+              <td class="mono xs">{{ log.timestamp[:16] }}</td>
+              <td><span style="border:1px solid var(--border);padding:2px 6px;font-size:0.6rem;text-transform:uppercase;color:var(--alert);">{{ log.status }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="xs muted" style="padding:1rem;">{% if search %}No logs match "{{ search }}".{% else %}No attacks logged yet. System is clean.{% endif %}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ══ MY STUDENTS ══ -->
+  <div style="display:{% if tab=='users' %}block{% else %}none{% endif %};">
+    <div class="panel">
+      <div class="panel-title"><span class="icon">○</span> Students in {{ org.name }} ({{ stats.students }})</div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Username</th><th>Email</th><th>Dept</th><th>Sem</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for u in users %}{% if u.role == 'student' %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td class="hl">{{ u.full_name or '—' }}</td>
+              <td class="mono xs">@{{ u.username }}</td>
+              <td class="mono xs">{{ u.email }}</td>
+              <td>{{ u.department }}</td>
+              <td>{{ u.year }}</td>
+              <td><span style="border:1px solid var(--border);padding:2px 6px;font-size:0.6rem;font-family:var(--mono);text-transform:uppercase;color:{% if u.is_locked %}var(--alert){% else %}var(--safe){% endif %};">{% if u.is_locked %}LOCKED{% else %}ACTIVE{% endif %}</span></td>
+              <td class="mono xs">{{ u.created_at[:10] }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('toggle_lock', user_id=u.id) }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm {% if u.is_locked %}btn-safe{% else %}btn-alert{% endif %}">{{ 'Unlock' if u.is_locked else 'Lock' }}</button>
+                </form>
+              </td>
+            </tr>
+            {% endif %}{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Activity summary -->
+    <div class="panel" style="margin-top:1rem;">
+      <div class="panel-title"><span class="icon">📈</span> Student Activity Summary</div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Name</th><th>Username</th><th>Messages Sent</th><th>Files Shared</th><th>Last Login</th></tr></thead>
+          <tbody>
+            {% for a in activity %}
+            <tr>
+              <td class="hl">{{ a.full_name or '—' }}</td>
+              <td class="mono xs">@{{ a.username }}</td>
+              <td style="color:var(--accent);">{{ a.messages }}</td>
+              <td style="color:var(--safe);">{{ a.files }}</td>
+              <td class="mono xs">{{ a.last_login }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ANNOUNCEMENTS ══ -->
+  <div style="display:{% if tab=='post' %}block{% else %}none{% endif %};">
+    <div style="display:grid;grid-template-columns:380px 1fr;gap:1rem;" class="mob-grid">
+      <div class="panel">
+        <div class="panel-title"><span class="icon">📢</span> Post to {{ org.name }}</div>
+        <form method="POST" action="{{ url_for('post_announcement') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Title</label><input type="text" name="title" required maxlength="200"></div>
+          <div class="field"><label>Content</label><textarea name="content" required maxlength="2000" style="min-height:100px;"></textarea></div>
+          <div class="field"><label>Category</label>
+            <select name="category">
+              <option value="general">General</option>
+              <option value="academic">Academic</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-terminal btn-full">Publish to Org</button>
+        </form>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><span class="icon">📋</span> Published ({{ announcements|length }})</div>
+        <div class="scroll-list">
+          {% if announcements %}{% for a in announcements %}
+          <div class="item">
+            <div class="item-row">
+              <div style="min-width:0;">
+                <div class="item-title">{{ a.title }}</div>
+                <div class="item-meta">{{ a.created_at[:16] }} · {{ a.category }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0;">
+                <span class="flag safe">{{ a.category }}</span>
+                <form method="POST" action="{{ url_for('delete_announcement', ann_id=a.id) }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-alert" onclick="return confirm('Delete?')">✕</button>
+                </form>
+              </div>
+            </div>
+            <div class="item-body">{{ a.content }}</div>
+          </div>
+          {% endfor %}{% else %}<p class="xs muted">No announcements yet.</p>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MESSAGES ══ -->
+  <div style="display:{% if tab=='messages' %}grid{% else %}none{% endif %};grid-template-columns:360px 1fr;gap:1rem;" class="mob-grid">
+    <div class="panel">
+      <div class="panel-title"><span class="icon">📡</span> Broadcast to All Students</div>
+      <form method="POST" action="{{ url_for('send_message') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="broadcast" value="1">
+        <div class="field"><label>Subject</label><input type="text" name="subject" required maxlength="140"></div>
+        <div class="field"><label>Message</label><textarea name="body" required style="min-height:90px;"></textarea></div>
+        <button type="submit" class="btn btn-terminal btn-full" onclick="return confirm('Broadcast to ALL students?')">📡 Send to All Students</button>
+      </form>
+      <div style="border-top:1px solid var(--border);margin-top:1rem;padding-top:1rem;">
+        <div class="mono xs muted" style="margin-bottom:0.6rem;">Or send to one student:</div>
+        <form method="POST" action="{{ url_for('send_message') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>To</label>
+            <select name="recipient_id">
+              {% for u in org_users %}<option value="{{ u.id }}">{{ u.full_name or u.username }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field"><label>Subject</label><input type="text" name="subject" required maxlength="140"></div>
+          <div class="field"><label>Message</label><textarea name="body" required style="min-height:60px;"></textarea></div>
+          <button type="submit" class="btn btn-terminal btn-full">✉ Send to Student</button>
+        </form>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title" style="justify-content:space-between;"><span><span class="icon">📥</span> Received Messages</span></div>
+      <div class="scroll-list" style="max-height:420px;">
+        {% if sent_messages %}
+          {% for m in sent_messages %}
+          <div class="item">
+            <div class="item-row">
+              <div style="min-width:0;">
+                <div class="item-title">{{ m.subject }}</div>
+                <div class="item-meta">{{ m.recipient_name }} · {{ m.created_at[:16] }}</div>
+              </div>
+              <span class="flag">SENT</span>
+            </div>
+            <div class="item-body">{{ m.body }}</div>
+            <!-- Admin inline reply -->
+            <div class="reply-wrap" id="areply-{{ m.id }}" style="display:none;margin-top:.55rem;border-top:1px solid var(--border);padding-top:.5rem;">
+              <form method="POST" action="/admin/reply/{{ m.id }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="display:flex;gap:.4rem;align-items:flex-start;">
+                  <textarea name="body" placeholder="Write reply..." maxlength="2000" required style="min-height:52px;flex:1;"></textarea>
+                  <button type="submit" class="btn btn-terminal btn-sm" style="flex-shrink:0;">↑ Send</button>
+                </div>
+              </form>
+            </div>
+            <div style="margin-top:.35rem;">
+              <button class="btn btn-sm" onclick="toggleAdminReply({{ m.id }})" style="font-size:.58rem;padding:.2rem .5rem;">↩ Reply</button>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="xs muted">No messages sent yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ORG SETTINGS ══ -->
+  <div style="display:{% if tab=='settings' %}block{% else %}none{% endif %};">
+    <div style="display:grid;grid-template-columns:420px 1fr;gap:1rem;" class="mob-grid">
+      <div class="panel">
+        <div class="panel-title"><span class="icon" style="color:var(--alert);">🔑</span> Rotate Admin Code</div>
+        <div style="border:1px solid var(--border);background:var(--bg);padding:0.75rem;margin-bottom:1rem;font-family:var(--mono);font-size:0.72rem;color:var(--muted-f);line-height:1.6;">
+          Rotating the code invalidates the old one immediately. New students must use the new code to join.
+        </div>
+        <form method="POST" action="{{ url_for('rotate_code') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>New Admin Code</label>
+            <div class="pw-wrap">
+              <input type="password" name="new_code" placeholder="Min 8 characters" required autocomplete="off" oninput="codeStr(this.value)">
+              <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1">
+                <span class="eye-open"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>
+              </button>
+            </div>
+            <div class="strength-grid" style="margin-top:0.4rem;">
+              <div class="s-bar" id="c0"></div><div class="s-bar" id="c1"></div>
+              <div class="s-bar" id="c2"></div><div class="s-bar" id="c3"></div><div class="s-bar" id="c4"></div>
+            </div>
+          </div>
+          <div class="field"><label>Confirm New Code</label>
+            <div class="pw-wrap">
+              <input type="password" name="confirm_code" placeholder="Re-enter code" required autocomplete="off">
+              <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1">
+                <span class="eye-open"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>
+              </button>
+            </div>
+          </div>
+          <div class="field"><label>Your Admin Password</label>
+            <div class="pw-wrap">
+              <input type="password" name="admin_password" placeholder="Confirm with your password" required>
+              <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1">
+                <span class="eye-open"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-terminal btn-full" onclick="return confirm('Rotate admin code?')">🔄 Rotate Admin Code</button>
+        </form>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="panel">
+          <div class="panel-title"><span class="icon">◈</span> Organization Isolation</div>
+          <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted-f);line-height:1.9;">
+            <div>✓ Students only see members of <span style="color:var(--accent);">{{ org.name }}</span></div>
+            <div>✓ Files, messages, announcements are org-scoped</div>
+            <div>✓ Other admins cannot access your data</div>
+            <div>✓ Cross-org file sharing is blocked</div>
+            <div style="margin-top:0.5rem;color:var(--alert);">✕ Wrong admin code attempts are logged</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span class="icon" style="color:var(--alert);">⚠</span> Security Notes</div>
+          <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted-f);line-height:1.8;">
+            <div>Admin Code stored as bcrypt hash — never plaintext</div>
+            <div>Rotating code invalidates old one instantly</div>
+            <div>Code change requires your admin password</div>
+            <div>Failed code attempts logged with IP + payload</div>
+            <div style="color:var(--alert);margin-top:0.4rem;">Never share your admin code publicly</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ── Strength bar for rotate code ── */
+function codeStr(pw) {
+  let s = [pw.length>=8,/[A-Z]/.test(pw),/[a-z]/.test(pw),/\d/.test(pw),/[!@#$%^&*(),.?":{}|<>]/.test(pw)].filter(Boolean).length;
+  for (let i=0;i<5;i++) document.getElementById('c'+i).className='s-bar'+(i<s?' on':'');
+}
+
+/* ── Auto-refresh (Feature 5 placeholder) ── */
+{% if tab == 'logs' %}
+setInterval(async () => {
+  try {
+    const r = await fetch('/api/attack_alert');
+    const d = await r.json();
+    const badge = document.getElementById('totalBadge');
+    const lbl   = document.getElementById('lastUpdated');
+    const ct    = document.getElementById('chartTotal');
+    if (badge) badge.textContent = d.total + ' total';
+    if (lbl)   lbl.textContent   = d.ts + ' (live)';
+    if (ct)    ct.textContent    = d.total;
+    if (d.count > 0 && typeof showToast !== 'undefined')
+      showToast('🔔 ' + d.count + ' new attack(s) detected!', 'alert');
+  } catch(e) {}
+}, 30000);
+{% endif %}
+</script>
+{% endblock %}

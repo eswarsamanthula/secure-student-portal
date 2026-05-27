@@ -1,0 +1,5 @@
+.env
+portal.db
+uploads/
+__pycache__/
+*.pyc

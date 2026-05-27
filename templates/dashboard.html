@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ org.name }}{% endblock %}
+{% block content %}
+<div class="content-grid">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <!-- Org badge -->
+    <div class="panel" style="border-color:var(--accent);margin-bottom:1rem;">
+      <div style="font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;color:var(--accent);letter-spacing:0.1em;margin-bottom:0.35rem;">// Your Organization</div>
+      <div style="font-weight:600;font-size:0.9rem;overflow-wrap:break-word;">{{ org.name }}</div>
+      <div style="font-family:var(--mono);font-size:0.68rem;color:var(--muted-f);margin-top:0.2rem;">{{ org_users|length }} member(s)</div>
+    </div>
+
+    <!-- Profile -->
+    <div class="panel">
+      <div class="panel-title"><span class="icon">○</span> Profile</div>
+      <div style="font-size:0.875rem;color:var(--muted-f);line-height:1.7;">
+        <p style="color:var(--fg);font-weight:600;">{{ user.full_name or session.username }}</p>
+        <p>@{{ session.username }}</p>
+        <p>{{ user.email }}</p>
+        <p class="mono xs">{{ user.department }} · {{ user.year }}</p>
+      </div>
+      {% if user.bio %}<p class="sm muted" style="margin-top:0.5rem;border-top:1px solid var(--border);padding-top:0.5rem;">{{ user.bio }}</p>{% endif %}
+      <a href="{{ url_for('profile') }}" class="btn btn-sm" style="width:100%;justify-content:center;margin-top:0.75rem;">Edit Profile</a>
+    </div>
+
+    <!-- Org Members -->
+    <div class="panel" style="margin-top:1rem;">
+      <div class="panel-title"><span class="icon">◈</span> Org Members</div>
+      <div style="max-height:160px;overflow-y:auto;">
+        {% for u in org_users %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid hsl(0 0% 20% / 0.4);">
+          <div>
+            <div style="font-size:0.8rem;font-weight:500;">{{ u.full_name or u.username }}</div>
+            <div class="mono xs muted">@{{ u.username }}</div>
+          </div>
+          {% if u.id == session.user_id %}
+          <span style="font-family:var(--mono);font-size:0.6rem;color:var(--safe);">you</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Attack stats -->
+    <div class="panel" style="margin-top:1rem;">
+      <div class="panel-title"><span class="icon">⚡</span> Attack Stats</div>
+      {% if atk_stats %}
+        {% for atype, cnt in atk_stats %}
+        <div class="stat-entry">
+          <div class="stat-row"><span class="xs">{{ atype }}</span><span class="alert xs">{{ cnt }}</span></div>
+          <div class="stat-bar"><div class="stat-fill" style="width:{{ [cnt*20,100]|min }}%;"></div></div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="xs muted">No attacks detected.</p>
+      {% endif %}
+    </div>
+
+    <!-- Protections -->
+    <div class="panel" style="margin-top:1rem;">
+      <div class="panel-title"><span class="icon">🛡</span> Active Protections</div>
+      <div class="prot-strip">
+        {% for p in ['Org Isolation','CSRF Token','Session Auth','XSS Sanitized','SQLi Blocked','Brute Force Limit','File Type Check','Path Traversal Block','IDOR Protection','Security Headers'] %}
+          <div class="prot-chip">✓ {{ p }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </aside>
+
+  <!-- TABS -->
+  <div>
+    <div class="tabs-list" style="grid-template-columns:repeat(4,1fr);">
+      <a href="?tab=messages" class="tab-btn {% if tab=='messages' %}active{% endif %}">✉ Messages</a>
+      <a href="?tab=files"    class="tab-btn {% if tab=='files'    %}active{% endif %}">📎 Files</a>
+      <a href="?tab=notes"    class="tab-btn {% if tab=='notes'    %}active{% endif %}">🔒 Notes</a>
+      <a href="?tab=announce" class="tab-btn {% if tab=='announce' %}active{% endif %}">📢 Announcements</a>
+    </div>
+
+    <!-- ══ MESSAGES ══ -->
+    <div style="display:{% if tab=='messages' %}grid{% else %}none{% endif %};grid-template-columns:360px 1fr;gap:1rem;margin-top:1rem;" class="mob-grid">
+      <div class="panel">
+        <div class="panel-title"><span class="icon">✉</span> Send Message</div>
+        <form method="POST" action="{{ url_for('send_message') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>To</label>
+            <select name="recipient_id">
+              <option value="">— Admin —</option>
+              {% for u in org_users %}{% if u.id != session.user_id %}
+                <option value="{{ u.id }}">{{ u.full_name or u.username }}</option>
+              {% endif %}{% endfor %}
+            </select>
+          </div>
+          <div class="field"><label>Subject</label><input type="text" name="subject" maxlength="140" required></div>
+          <div class="field"><label>Message</label><textarea name="body" maxlength="2000" required style="min-height:100px;"></textarea></div>
+          <button type="submit" class="btn btn-terminal btn-full">↑ Send</button>
+        </form>
+      </div>
+      <div class="panel">
+        <div class="panel-title" style="justify-content:space-between;">
+          <span><span class="icon">📥</span> Inbox &amp; Sent</span>
+          <span class="mono xs muted">{{ messages|length }}</span>
+        </div>
+        <div class="scroll-list">
+          {% if messages %}{% for m in messages %}
+          <div class="item">
+            <div class="item-row">
+              <div style="min-width:0;">
+                <div class="item-title">{{ m.subject }}</div>
+                <div class="item-meta">
+                  {% if m.sender_id == session.user_id %}
+                    <span style="color:var(--accent);">You</span> → {{ m.recipient_name }}
+                  {% else %}
+                    <span style="color:var(--safe);">{{ m.sender_name }}</span> → You
+                  {% endif %}
+                  · {{ m.created_at[:16] }}
+                </div>
+              </div>
+              <span class="flag {% if m.sender_id != session.user_id %}safe{% endif %}">
+                {{ 'INBOX' if m.sender_id != session.user_id else 'SENT' }}
+              </span>
+            </div>
+            <div class="item-body">{{ m.body }}</div>
+            <!-- Inline reply -->
+            <div class="reply-wrap" id="reply-{{ m.id }}" style="display:none;margin-top:.55rem;border-top:1px solid var(--border);padding-top:.5rem;">
+              <form method="POST" action="/reply/{{ m.id }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="display:flex;gap:.4rem;align-items:flex-start;">
+                  <textarea name="body" placeholder="Write reply..." maxlength="2000" required
+                    style="min-height:52px;flex:1;font-size:max(16px,.8rem);"></textarea>
+                  <button type="submit" class="btn btn-terminal btn-sm" style="flex-shrink:0;margin-top:0;">↑ Send</button>
+                </div>
+              </form>
+            </div>
+            <div style="margin-top:.35rem;">
+              <button class="btn btn-sm" onclick="toggleReply({{ m.id }})" style="font-size:.58rem;padding:.2rem .5rem;">↩ Reply</button>
+            </div>
+          </div>
+          {% endfor %}{% else %}
+          <p class="xs muted">No messages yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FILES ══ -->
+    <div style="display:{% if tab=='files' %}grid{% else %}none{% endif %};grid-template-columns:360px 1fr;gap:1rem;margin-top:1rem;" class="mob-grid">
+      <div class="panel">
+        <div class="panel-title"><span class="icon">📎</span> Share a File</div>
+        <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Share With</label>
+            <select name="recipient_id">
+              <option value="">— Admin —</option>
+              {% for u in org_users %}{% if u.id != session.user_id %}
+                <option value="{{ u.id }}">{{ u.full_name or u.username }}</option>
+              {% endif %}{% endfor %}
+            </select>
+          </div>
+          <div class="field"><label>Note (optional)</label>
+            <textarea name="share_note" style="min-height:50px;"></textarea>
+          </div>
+          <div class="drop-zone" onclick="document.getElementById('fu').click()">
+            <input type="file" name="file" id="fu" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" onchange="showFn(this)">
+            <div style="font-size:1.4rem;margin-bottom:0.25rem;">📎</div>
+            <div class="mono xs muted" id="fnLabel">Click to select file</div>
+            <div class="mono" style="font-size:0.6rem;color:var(--muted-f);margin-top:0.15rem;">PDF · DOCX · TXT · PNG · JPG · Max 5MB</div>
+          </div>
+          <button type="submit" class="btn btn-terminal btn-full" style="margin-top:0.5rem;">↑ Scan &amp; Share</button>
+        </form>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="panel">
+          <div class="panel-title" style="justify-content:space-between;">
+            <span><span class="icon">📥</span> Shared With Me</span>
+            <span class="mono xs muted">{{ shared_with_me|length }}</span>
+          </div>
+          <div class="scroll-list" style="max-height:200px;">
+            {% if shared_with_me %}{% for f in shared_with_me %}
+            <div class="file-row">
+              <div style="min-width:0;">
+                <div class="mono sm" style="color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ f.original_name }}</div>
+                <div class="mono xs muted">From: {{ f.owner_name or f.owner_username }} · {{ (f.file_size/1024)|round(1) }} KB · {{ f.uploaded_at[:16] }}</div>
+                {% if f.share_note %}<div class="xs acc">"{{ f.share_note }}"</div>{% endif %}
+              </div>
+              <a href="{{ url_for('download_file', file_id=f.id) }}" class="btn btn-sm btn-safe" style="flex-shrink:0;">↓ Open</a>
+            </div>
+            {% endfor %}{% else %}
+            <p class="xs muted">No files shared with you.</p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title" style="justify-content:space-between;">
+            <span><span class="icon">📤</span> My Uploads</span>
+            <span class="mono xs muted">{{ files|length }}</span>
+          </div>
+          <div class="scroll-list" style="max-height:200px;">
+            {% if files %}{% for f in files %}
+            <div class="file-row">
+              <div style="min-width:0;">
+                <div class="mono sm" style="color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ f.original_name }}</div>
+                <div class="mono xs muted">To: {{ f.recipient_name or 'Admin' }} · {{ (f.file_size/1024)|round(1) }} KB · {{ f.uploaded_at[:16] }}</div>
+                {% if f.share_note %}<div class="xs muted">"{{ f.share_note }}"</div>{% endif %}
+              </div>
+              <div style="display:flex;gap:0.4rem;flex-shrink:0;">
+                <a href="{{ url_for('download_file', file_id=f.id) }}" class="btn btn-sm">↓</a>
+                <form method="POST" action="{{ url_for('delete_file', file_id=f.id) }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-alert" onclick="return confirm('Delete?')">✕</button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}{% else %}
+            <p class="xs muted">No uploads yet.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ NOTES ══ -->
+    <div style="display:{% if tab=='notes' %}grid{% else %}none{% endif %};grid-template-columns:360px 1fr;gap:1rem;margin-top:1rem;" class="mob-grid">
+      <div class="panel">
+        <div class="panel-title"><span class="icon">🔒</span> Add Private Note</div>
+        <form method="POST" action="{{ url_for('add_note') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Title</label><input type="text" name="title" maxlength="120" required></div>
+          <div class="field"><label>Content</label><textarea name="content" maxlength="2000" required style="min-height:120px;"></textarea></div>
+          <button type="submit" class="btn btn-terminal btn-full">Save Note</button>
+        </form>
+        <div style="margin-top:0.6rem;border:1px solid var(--border);background:var(--bg);padding:0.5rem;font-family:var(--mono);font-size:0.62rem;color:var(--muted-f);">
+          Private to your account only. XSS and SQLi inputs are blocked and logged.
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title" style="justify-content:space-between;">
+          <span><span class="icon">🛡</span> Your Notes</span>
+          <span class="mono xs muted">{{ notes|length }}</span>
+        </div>
+        <div class="scroll-list">
+          {% if notes %}{% for n in notes %}
+          <div class="item">
+            <div class="item-row">
+              <div style="min-width:0;">
+                <div class="item-title">{{ n.title }}</div>
+                <div class="item-meta">{{ n.created_at[:16] }}</div>
+              </div>
+              <form method="POST" action="{{ url_for('delete_note', note_id=n.id) }}" style="flex-shrink:0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-alert" onclick="return confirm('Delete?')">✕</button>
+              </form>
+            </div>
+            <div class="item-body">{{ n.content }}</div>
+          </div>
+          {% endfor %}{% else %}
+          <p class="xs muted">No notes yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ANNOUNCEMENTS ══ -->
+    <div style="display:{% if tab=='announce' %}block{% else %}none{% endif %};margin-top:1rem;">
+      <div class="panel">
+        <div class="panel-title" style="justify-content:space-between;">
+          <span><span class="icon">📢</span> {{ org.name }} — Announcements</span>
+          <span class="mono xs muted">{{ announcements|length }}</span>
+        </div>
+        {% if announcements %}{% for a in announcements %}
+        <div class="item">
+          <div class="item-row">
+            <div style="min-width:0;">
+              <div class="item-title">{{ a.title }}</div>
+              <div class="item-meta">{{ a.created_at[:16] }}</div>
+            </div>
+            <span class="flag safe">{{ a.category }}</span>
+          </div>
+          <div class="item-body">{{ a.content }}</div>
+        </div>
+        {% endfor %}{% else %}
+        <p class="xs muted">No announcements from your admin yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function showFn(input) {
+  document.getElementById('fnLabel').textContent = input.files[0] ? input.files[0].name : 'Click to select file';
+}
+</script>
+{% endblock %}

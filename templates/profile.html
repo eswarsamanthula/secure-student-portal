@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Profile — Secure Student Portal{% endblock %}
+{% block content %}
+<div class="content-grid">
+  <aside>
+    <div class="panel">
+      <div class="panel-title"><span class="icon">○</span> Account Info</div>
+      <div class="sy xs muted">
+        <p style="color:var(--fg);font-size:0.875rem;font-weight:600;">{{ user.full_name or session.username }}</p>
+        <p>@{{ user.username }}</p>
+        <p>{{ user.email }}</p>
+        <p>{{ user.department }} · {{ user.year }}</p>
+        <p>Role: <span style="color:var(--accent);">{{ user.role }}</span></p>
+        <p>Joined: {{ user.created_at[:10] }}</p>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:1rem;">
+      <div class="panel-title"><span class="icon">🛡</span> Security Status</div>
+      <div class="prot-strip">
+        <div class="prot-chip">✓ Password Hashed</div>
+        <div class="prot-chip">✓ Session Active</div>
+        <div class="prot-chip">✓ CSRF Protected</div>
+      </div>
+    </div>
+  </aside>
+
+  <div>
+    <div class="panel" style="margin-bottom:1rem;">
+      <div class="panel-title"><span class="icon">○</span> Edit Profile</div>
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="g2">
+          <div class="field"><label>Full Name</label><input type="text" name="full_name" value="{{ user.full_name or '' }}" required></div>
+          <div class="field"><label>Department</label>
+            <select name="department">
+              {% for d in ['CSE','ECE','EEE','ME','CE'] %}
+              <option {% if user.department==d %}selected{% endif %}>{{ d }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Semester / Year</label>
+          <select name="year">
+            {% for y in ['S2','S4','S6','S8'] %}
+            <option {% if user.year==y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field"><label>Bio</label><textarea name="bio" placeholder="Short bio..." maxlength="300">{{ user.bio or '' }}</textarea></div>
+        <button type="submit" class="btn btn-terminal">Update Profile</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span class="icon">🔑</span> Change Password</div>
+      <form method="POST" action="{{ url_for('change_password') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field"><label>Current Password</label><div class="pw-wrap"><div class="eye-wrap"><input id="pwField1" type="password" name="current_password" required><button type="button" class="eye-btn" onclick="toggleEye('pwField1','eyeIco1')" tabindex="-1"><span id="eyeIco1">👁</span></button></div>
+        <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1" aria-label="Toggle password visibility">
+          <span class="eye-open"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>
+        </button>
+      </div></div>
+        <div class="field"><label>New Password</label><div class="pw-wrap"><div class="eye-wrap"><input type="password" name="new_password" id="npw" placeholder="Min 8 · A-Z · 0-9 · symbol" required oninput="updateStrength(this.value)"><button type="button" class="eye-btn" onclick="toggleEye('npw','eyeIco2')" tabindex="-1"><span id="eyeIco2">👁</span></button></div>
+        <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1" aria-label="Toggle password visibility">
+          <span class="eye-open"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>
+        </button>
+      </div>
+          <div class="strength-grid" style="margin-top:0.4rem;">
+            <div class="s-bar" id="b0"></div><div class="s-bar" id="b1"></div>
+            <div class="s-bar" id="b2"></div><div class="s-bar" id="b3"></div><div class="s-bar" id="b4"></div>
+          </div>
+          <div class="mono xs muted" id="sLabel" style="margin-top:3px;">Password strength</div>
+        </div>
+        <button type="submit" class="btn btn-terminal">Change Password</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const labels = ['Very Weak','Weak','Fair','Strong','Very Strong'];
+function updateStrength(pw) {
+  let s = [pw.length>=8,/[A-Z]/.test(pw),/[a-z]/.test(pw),/\d/.test(pw),/[!@#$%^&*(),.?":{}|<>]/.test(pw)].filter(Boolean).length;
+  for(let i=0;i<5;i++) document.getElementById('b'+i).className='s-bar'+(i<s?' on':'');
+  document.getElementById('sLabel').textContent = s>0?labels[s-1]+' ('+s+'/5)':'Password strength';
+}
+</script>
+{% endblock %}
