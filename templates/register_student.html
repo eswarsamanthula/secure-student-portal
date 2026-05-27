@@ -5,14 +5,17 @@
 
   <div style="display:flex;flex-direction:column;gap:1.25rem;">
     <a href="{{ url_for('login') }}" class="btn btn-sm" style="align-self:flex-start;">← Back to Login</a>
-    <div style="display:inline-flex;align-items:center;gap:0.5rem;border:1px solid var(--safe);background:hsl(132 67% 52% / 0.08);padding:0.375rem 0.75rem;font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;color:var(--safe);">
+    <div
+      style="display:inline-flex;align-items:center;gap:0.5rem;border:1px solid var(--safe);background:hsl(132 67% 52% / 0.08);padding:0.375rem 0.75rem;font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;color:var(--safe);">
       ○ Student Registration
     </div>
     <h1 class="mono" style="font-size:2.5rem;line-height:1.1;">Join Your<br>Organization</h1>
     <p class="sm muted" style="max-width:46ch;line-height:1.7;">
-      Get your Admin Code from your administrator, then register below to join their organization. You will only see data from your own organization.
+      Get your Admin Code from your administrator, then register below to join their organization. You will only see
+      data from your own organization.
     </p>
-    <div style="border:1px solid var(--border);background:var(--card);padding:1rem;font-family:var(--mono);font-size:0.72rem;color:var(--muted-f);line-height:1.9;">
+    <div
+      style="border:1px solid var(--border);background:var(--card);padding:1rem;font-family:var(--mono);font-size:0.72rem;color:var(--muted-f);line-height:1.9;">
       <div style="color:var(--fg);margin-bottom:0.4rem;">How it works:</div>
       <div>1. Get Admin Code from your admin</div>
       <div>2. Fill in your details below</div>
@@ -23,52 +26,101 @@
   </div>
 
   <div class="auth-card">
-    <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;color:var(--safe);margin-bottom:1rem;letter-spacing:0.1em;">// Student Account</div>
+    <div
+      style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;color:var(--safe);margin-bottom:1rem;letter-spacing:0.1em;">
+      // Student Account</div>
 
     <form method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <div class="g2">
-        <div class="field"><label>Full Name</label><input type="text" name="full_name" placeholder="Your full name" required></div>
-        <div class="field"><label>Username</label><input type="text" name="username" placeholder="username" required autocomplete="off"></div>
+        <div class="field"><label>Full Name</label><input type="text" name="full_name" placeholder="Your full name"
+            required></div>
+        <div class="field"><label>Username</label><input type="text" name="username" placeholder="username" required
+            autocomplete="off"></div>
       </div>
 
-      <div class="field"><label>Email</label><input type="email" name="email" placeholder="you@college.edu" required></div>
+      <div class="field"><label>Email</label><input type="email" name="email" placeholder="you@college.edu" required>
+      </div>
 
       <div class="g2">
         <div class="field"><label>Department</label>
-          <select name="department"><option>CSE</option><option>ECE</option><option>EEE</option><option>ME</option><option>CE</option></select>
+          <select name="department">
+            <option>CSE</option>
+            <option>ECE</option>
+            <option>EEE</option>
+            <option>ME</option>
+            <option>CE</option>
+            <option>Other</option>
+          </select>
         </div>
         <div class="field"><label>Semester</label>
-          <select name="year"><option>S6</option><option>S4</option><option>S2</option><option>S8</option></select>
+          <select name="year">
+            <option>S1</option>
+            <option>S2</option>
+            <option>S3</option>
+            <option>S4</option>
+            <option>S5</option>
+            <option>S6</option>
+            <option>S7</option>
+            <option>S8</option>
+          </select>
         </div>
       </div>
 
       <div class="field">
         <label>Password</label>
-        <div class="pw-wrap"><div class="eye-wrap"><input type="password" name="password" id="pw" placeholder="Min 8 · A-Z · 0-9 · symbol" required oninput="updateStrength(this.value)"><button type="button" class="eye-btn" onclick="toggleEye('pw','eyeIco1')" tabindex="-1"><span id="eyeIco1">👁</span></button></div>
-        <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1" aria-label="Toggle password visibility">
-          <span class="eye-open"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
-          <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>
-        </button>
-      </div>
+        <div class="pw-wrap">
+          <div class="eye-wrap"><input type="password" name="password" id="pw" placeholder="Min 8 · A-Z · 0-9 · symbol"
+              required oninput="updateStrength(this.value)"><button type="button" class="eye-btn"
+              onclick="toggleEye('pw','eyeIco1')" tabindex="-1"><span id="eyeIco1">👁</span></button></div>
+          <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1"
+            aria-label="Toggle password visibility">
+            <span class="eye-open"><svg viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg></span>
+            <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg></span>
+          </button>
+        </div>
         <div class="strength-grid" style="margin-top:0.4rem;">
-          <div class="s-bar" id="b0"></div><div class="s-bar" id="b1"></div>
-          <div class="s-bar" id="b2"></div><div class="s-bar" id="b3"></div><div class="s-bar" id="b4"></div>
+          <div class="s-bar" id="b0"></div>
+          <div class="s-bar" id="b1"></div>
+          <div class="s-bar" id="b2"></div>
+          <div class="s-bar" id="b3"></div>
+          <div class="s-bar" id="b4"></div>
         </div>
         <div class="mono xs muted" id="sLabel" style="margin-top:3px;">Password strength</div>
       </div>
 
       <div style="border:1px solid var(--border);background:var(--bg);padding:0.75rem;margin-bottom:0.75rem;">
-        <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;color:var(--safe);margin-bottom:0.5rem;letter-spacing:0.1em;">// Join Organization</div>
+        <div
+          style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;color:var(--safe);margin-bottom:0.5rem;letter-spacing:0.1em;">
+          // Join Organization</div>
         <div class="field" style="margin-bottom:0;">
           <label>Admin Code</label>
-          <div class="pw-wrap"><div class="eye-wrap"><input id="pwField2" type="password" name="admin_code" placeholder="Enter the code given by your admin" required autocomplete="off"><button type="button" class="eye-btn" onclick="toggleEye('pwField2','eyeIco2')" tabindex="-1"><span id="eyeIco2">👁</span></button></div>
-        <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1" aria-label="Toggle password visibility">
-          <span class="eye-open"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
-          <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>
-        </button>
-      </div>
+          <div class="pw-wrap">
+            <div class="eye-wrap"><input id="pwField2" type="password" name="admin_code"
+                placeholder="Enter the code given by your admin" required autocomplete="off"><button type="button"
+                class="eye-btn" onclick="toggleEye('pwField2','eyeIco2')" tabindex="-1"><span
+                  id="eyeIco2">👁</span></button></div>
+            <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1"
+              aria-label="Toggle password visibility">
+              <span class="eye-open"><svg viewBox="0 0 24 24">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg></span>
+              <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24">
+                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                  <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg></span>
+            </button>
+          </div>
         </div>
         <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted-f);margin-top:0.4rem;">
           Ask your administrator for this code. Wrong code = registration fails.
@@ -86,11 +138,11 @@
 {% endblock %}
 {% block scripts %}
 <script>
-const labels = ['Very Weak','Weak','Fair','Strong','Very Strong'];
-function updateStrength(pw) {
-  let s = [pw.length>=8,/[A-Z]/.test(pw),/[a-z]/.test(pw),/\d/.test(pw),/[!@#$%^&*(),.?":{}|<>]/.test(pw)].filter(Boolean).length;
-  for (let i=0;i<5;i++) document.getElementById('b'+i).className='s-bar'+(i<s?' on':'');
-  document.getElementById('sLabel').textContent = s>0?labels[s-1]+' ('+s+'/5)':'Password strength';
-}
+  const labels = ['Very Weak', 'Weak', 'Fair', 'Strong', 'Very Strong'];
+  function updateStrength(pw) {
+    let s = [pw.length >= 8, /[A-Z]/.test(pw), /[a-z]/.test(pw), /\d/.test(pw), /[!@#$%^&*(),.?":{}|<>]/.test(pw)].filter(Boolean).length;
+    for (let i = 0; i < 5; i++) document.getElementById('b' + i).className = 's-bar' + (i < s ? ' on' : '');
+    document.getElementById('sLabel').textContent = s > 0 ? labels[s - 1] + ' (' + s + '/5)' : 'Password strength';
+  }
 </script>
 {% endblock %}
