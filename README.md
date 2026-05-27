@@ -3,6 +3,8 @@
 A multi-organization web application built with **Python Flask** demonstrating real-world cybersecurity countermeasures.
 Built for **23CSE313 — Foundations of Cyber Security**.
 
+🔗 **Live Demo:** [Secure-Student-Portal](https://secure-student-portal.onrender.com/)
+
 ---
 
 ## 🛡️ Security Features
