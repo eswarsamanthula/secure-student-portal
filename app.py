@@ -1165,6 +1165,19 @@ def setup_db():
     except Exception as e:
         return f"ERROR: {e}"
 
+SEED_SECRET = os.environ.get('SEED_SECRET', '')
+
+@app.route(f'/seed-{SEED_SECRET}')
+def seed_route():
+    if not SEED_SECRET:
+        return "disabled", 404
+    try:
+        from seed_data import seed
+        seed()
+        return "SEED DONE ✅"
+    except Exception as e:
+        return f"ERROR: {e}"
+
 with app.app_context():
     init_db()
 
