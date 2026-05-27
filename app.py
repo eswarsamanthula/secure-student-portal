@@ -1157,6 +1157,14 @@ def too_large(e): flash('File too large. Max 5 MB.','danger'); return redirect(u
 @app.errorhandler(429)
 def rate_limited(e): return render_template('error.html', code=429, msg="Too many requests."), 429
 
+@app.route('/setup-db-now')
+def setup_db():
+    try:
+        init_db()
+        return "DB tables created!"
+    except Exception as e:
+        return f"ERROR: {e}"
+
 if __name__ == '__main__':
     init_db()
     app.run(debug=False)
