@@ -1,113 +1,108 @@
 {% extends "base.html" %}
 {% block title %}Secure Student Portal — Login{% endblock %}
 {% block auth_content %}
-
 <style>
-  /* Login page mobile overrides */
   .login-wrap {
-    min-height: 100vh;
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    align-items: center;
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 2.5rem 1.5rem;
-    gap: 2.5rem;
+    min-height:100vh; display:grid; grid-template-columns:1fr 400px;
+    align-items:center; max-width:1080px; margin:0 auto;
+    padding:2.5rem 1.5rem; gap:2.5rem;
   }
-  .login-hero { display: flex; flex-direction: column; gap: 1.25rem; }
-  .login-card { border: 1px solid var(--border); background: var(--card); padding: 1.5rem; }
-
-  @media (max-width: 768px) {
-    .login-wrap {
-      grid-template-columns: 1fr;
-      padding: 1.5rem 1rem;
-      align-items: start;
-      gap: 0;
-    }
-    /* Hide hero on mobile — show compact badge at top of card instead */
-    .login-hero { display: none; }
-    .login-card {
-      padding: 1.25rem 1rem;
-      margin-top: 1rem;
-    }
-    .login-mob-badge { display: flex !important; }
+  .login-hero { display:flex; flex-direction:column; gap:1.5rem; animation:fadeUp 0.5s var(--ease) both; }
+  .login-card {
+    border:1px solid var(--border); background:var(--surface); padding:1.75rem;
+    border-radius:2px; animation:fadeUp 0.5s var(--ease) both; animation-delay:0.15s;
+    box-shadow:0 32px 80px rgba(0,0,0,0.5);
+    position:relative; overflow:hidden;
   }
-  @media (min-width: 769px) {
-    .login-mob-badge { display: none !important; }
+  /* scanline effect on card */
+  .login-card::before {
+    content:''; position:absolute; left:0; right:0; top:0; height:2px;
+    background:linear-gradient(90deg,transparent,rgba(77,158,255,0.4),transparent);
+    animation:scanline 3s linear infinite; pointer-events:none; z-index:1;
   }
+  .login-section-label {
+    font-family:var(--mono); font-size:0.65rem; text-transform:uppercase;
+    letter-spacing:0.1em; color:var(--text-2); margin-bottom:0.85rem;
+  }
+  .login-section-label::before { content:'// '; color:var(--accent); }
+  .chip-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.4rem; max-width:340px; }
+  .chip {
+    border:1px solid rgba(62,207,110,0.2); background:var(--safe-dim);
+    padding:0.4rem 0.6rem; font-family:var(--mono); font-size:0.62rem;
+    color:var(--safe); border-radius:2px;
+    animation:fadeUp 0.3s var(--ease) both;
+  }
+  @media (max-width:900px) {
+    .login-wrap { grid-template-columns:1fr; padding:1.5rem 1rem; align-items:start; gap:0; }
+    .login-hero { display:none; }
+    .login-card { margin-top:1rem; padding:1.25rem 1rem; }
+    .login-mob-badge { display:flex !important; }
+  }
+  @media (min-width:901px) { .login-mob-badge { display:none !important; } }
 </style>
 
 <div class="login-wrap">
-
-  <!-- Hero (desktop only) -->
+  <!-- Hero (desktop) -->
   <div class="login-hero">
-    <div style="display:inline-flex;align-items:center;gap:0.5rem;border:1px solid var(--border);background:var(--card);padding:0.375rem 0.75rem;font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;color:var(--safe);">
-      🛡 Multi-Org · bcrypt · CSRF · Rate Limit
+    <div style="display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(62,207,110,0.3);background:var(--safe-dim);padding:0.375rem 0.85rem;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;color:var(--safe);border-radius:2px;width:fit-content;">
+      <span style="animation:blink 1.2s step-end infinite;">●</span> Multi-Org · bcrypt · CSRF · Rate Limit
     </div>
-    <h1 class="mono" style="font-size:clamp(2rem,5vw,3.5rem);line-height:1.05;">Secure<br>Student Portal</h1>
-    <p class="sm muted" style="max-width:46ch;line-height:1.7;">
+    <h1 class="display" style="font-size:clamp(2.4rem,5vw,4rem);line-height:1.0;letter-spacing:-0.01em;">
+      Secure<br><span style="color:var(--accent);">Student</span><br>Portal
+    </h1>
+    <p class="sm muted" style="max-width:44ch;line-height:1.75;">
       Each admin creates their own isolated organization. Students join using their admin's secret code. All data is fully separated between organizations.
     </p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;max-width:340px;">
-      {% for chip in ['Org Isolation','SQLi Blocked','XSS Sanitized','CSRF Token','Brute Force Limit','IDOR Protection'] %}
-      <div style="border:1px solid var(--border);background:var(--card);padding:0.4rem 0.6rem;font-family:var(--mono);font-size:0.62rem;color:var(--safe);">✓ {{ chip }}</div>
+    <div class="chip-grid">
+      {% for chip, i in [('Org Isolation',0),('SQLi Blocked',1),('XSS Sanitized',2),('CSRF Token',3),('Brute Force Limit',4),('IDOR Protection',5)] %}
+      <div class="chip" style="animation-delay:{{ i*0.06 }}s;">✓ {{ chip }}</div>
       {% endfor %}
     </div>
   </div>
 
   <!-- Login card -->
   <div class="login-card">
-
-    <!-- Mobile-only top badge -->
-    <div class="login-mob-badge" style="display:none;align-items:center;gap:0.5rem;border:1px solid var(--border);background:var(--bg);padding:0.35rem 0.65rem;font-family:var(--mono);font-size:0.62rem;text-transform:uppercase;color:var(--safe);margin-bottom:1rem;flex-wrap:wrap;">
-      🛡 Secure Student Portal · Multi-Org
+    <!-- Mobile badge -->
+    <div class="login-mob-badge" style="display:none;align-items:center;gap:8px;border:1px solid rgba(62,207,110,0.2);background:var(--safe-dim);padding:0.35rem 0.65rem;font-family:var(--mono);font-size:0.62rem;text-transform:uppercase;color:var(--safe);margin-bottom:1.25rem;flex-wrap:wrap;border-radius:2px;">
+      <span style="animation:blink 1.2s step-end infinite;">●</span> Secure Student Portal · Multi-Org
     </div>
 
-    <!-- Title -->
-    <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;color:var(--muted-f);margin-bottom:0.75rem;letter-spacing:0.1em;">
-      // Sign In
-    </div>
+    <div class="login-section-label">Sign In</div>
 
     <form method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="field">
         <label>Username</label>
-        <input type="text" name="username" placeholder="your username" required autocomplete="off">
+        <input type="text" name="username" placeholder="your username" required autocomplete="username">
       </div>
       <div class="field">
         <label>Password</label>
-        <div class="pw-wrap"><div class="eye-wrap"><input id="pwField1" type="password" name="password" placeholder="••••••••" required><button type="button" class="eye-btn" onclick="toggleEye('pwField1','eyeIco1')" tabindex="-1"><span id="eyeIco1">👁</span></button></div>
-        <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1" aria-label="Toggle password visibility">
-          <span class="eye-open"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
-          <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>
-        </button>
+        <div class="pw-wrap">
+          <input type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" class="eye-btn" onclick="toggleEye(this)" tabindex="-1" aria-label="Toggle password">
+            <span class="eye-open"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+            <span class="eye-close" style="display:none;"><svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>
+          </button>
+        </div>
       </div>
-      </div>
-      <button type="submit" class="btn btn-terminal btn-full" style="margin-top:0.5rem;">🔒 Sign In</button>
+      <button type="submit" class="btn btn-terminal btn-full" style="margin-top:0.75rem;">🔒 Sign In</button>
       <div style="text-align:center;margin-top:0.75rem;">
-        <a href="/forgot-password" style="font-family:var(--mono);font-size:0.7rem;color:var(--muted-f);text-decoration:none;">Forgot password?</a>
+        <a href="/forgot-password" style="font-family:var(--mono);font-size:0.7rem;color:var(--text-2);text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-2)'">Forgot password?</a>
       </div>
     </form>
 
-    <div style="border-top:1px solid var(--border);margin-top:1.25rem;padding-top:1.25rem;display:flex;flex-direction:column;gap:0.5rem;">
-      <div style="font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;color:var(--muted-f);margin-bottom:0.25rem;">
-        // New here?
-      </div>
-      <a href="{{ url_for('register_admin') }}" class="btn btn-full" style="justify-content:center;">
-        ◈ Register as Admin &amp; Create Organization
-      </a>
-      <a href="{{ url_for('register_student') }}" class="btn btn-full" style="justify-content:center;">
-        ○ Register as Student (join an org)
-      </a>
+    <div style="border-top:1px solid var(--border);margin-top:1.5rem;padding-top:1.25rem;display:flex;flex-direction:column;gap:0.5rem;">
+      <div class="login-section-label" style="margin-bottom:0.5rem;">New here?</div>
+      <a href="{{ url_for('register_admin') }}" class="btn btn-full">◈ Register as Admin &amp; Create Org</a>
+      <a href="{{ url_for('register_student') }}" class="btn btn-full">○ Register as Student (join an org)</a>
     </div>
 
-    <!-- Mobile-only security chips -->
+    <!-- Mobile chips -->
     <div class="login-mob-badge" style="display:none;flex-wrap:wrap;gap:0.35rem;margin-top:1rem;border-top:1px solid var(--border);padding-top:0.85rem;">
       {% for chip in ['Org Isolation','SQLi Blocked','XSS Sanitized','CSRF Token','Brute Force Limit','IDOR Protection'] %}
-      <div style="border:1px solid var(--border);background:var(--bg);padding:0.25rem 0.5rem;font-family:var(--mono);font-size:0.58rem;color:var(--safe);">✓ {{ chip }}</div>
+      <div style="border:1px solid rgba(62,207,110,0.2);background:var(--safe-dim);padding:0.25rem 0.5rem;font-family:var(--mono);font-size:0.58rem;color:var(--safe);border-radius:2px;">✓ {{ chip }}</div>
       {% endfor %}
     </div>
-
   </div>
 </div>
 {% endblock %}
