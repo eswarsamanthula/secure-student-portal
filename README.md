@@ -5,9 +5,6 @@ Built for **23CSE313 — Foundations of Cyber Security**.
 
 🔗 **Live Demo:** [Secure-Student-Portal](https://secure-student-portal.onrender.com/)
 
-🔗 **Live Demo:** [Secure-Student-Portal](https://secure-student-portal.onrender.com/)
----
-
 ## 🛡️ Security Features
 
 | Attack | Protection |
