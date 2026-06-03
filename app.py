@@ -46,8 +46,7 @@ def send_email(to_addr, subject, html_body):
         msg['From']    = MAIL_SENDER
         msg['To']      = to_addr
         msg.attach(MIMEText(html_body, 'html'))
-        with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
-            server.ehlo()
+        with smtplib.SMTP('smtp-relay.brevo.com', 587, timeout=10) as server:            server.ehlo()
             server.starttls()
             server.login(MAIL_SENDER, MAIL_PASSWORD.replace(' ',''))
             server.sendmail(MAIL_SENDER, to_addr, msg.as_string())
