@@ -40,26 +40,27 @@ def send_email(to_addr, subject, html_body):
     if not MAIL_ENABLED:
         return False, 'Email disabled'
     try:
-        import threading
-        def _send():
-            try:
-                msg = MIMEMultipart('alternative')
-                msg['Subject'] = subject
-                msg['From']    = MAIL_SENDER
-                msg['To']      = to_addr
-                msg.attach(MIMEText(html_body, 'html'))
-                with smtplib.SMTP('smtp.gmail.com', 587, timeout=30) as server:
-                    server.ehlo()
-                    server.starttls()
-                    server.login(MAIL_SENDER, MAIL_PASSWORD.replace(' ',''))
-                    server.sendmail(MAIL_SENDER, to_addr, msg.as_string())
-            except Exception as e:
-                print(f"EMAIL ERROR: {e}")
-        threading.Thread(target=_send, daemon=True).start()
+        import urllib.request, json
+        api_key = os.environ.get('BREVO_API_KEY', '')
+        data = json.dumps({
+            "sender": {"name": "Secure Portal", "email": MAIL_SENDER},
+            "to": [{"email": to_addr}],
+            "subject": subject,
+            "htmlContent": html_body
+        }).encode('utf-8')
+        req = urllib.request.Request(
+            'https://api.brevo.com/v3/smtp/email',
+            data=data,
+            headers={
+                'Content-Type': 'application/json',
+                'api-key': api_key
+            }
+        )
+        urllib.request.urlopen(req, timeout=15)
         return True, ''
     except Exception as e:
         return False, str(e)
-
+        
 # ── Security headers ──────────────────────────────────────────────────────────
 @app.after_request
 def sec_headers(r):
