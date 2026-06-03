@@ -42,6 +42,7 @@ def send_email(to_addr, subject, html_body):
     try:
         import urllib.request, json
         api_key = os.environ.get('BREVO_API_KEY', '')
+        print("BREVO API PREFIX:", api_key[:8] if api_key else "EMPTY")
         data = json.dumps({
             "sender": {"name": "Secure Portal", "email": MAIL_SENDER},
             "to": [{"email": to_addr}],
@@ -60,7 +61,7 @@ def send_email(to_addr, subject, html_body):
         return True, ''
     except Exception as e:
         return False, str(e)
-        
+
 # ── Security headers ──────────────────────────────────────────────────────────
 @app.after_request
 def sec_headers(r):
