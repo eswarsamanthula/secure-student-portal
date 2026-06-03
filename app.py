@@ -37,24 +37,29 @@ MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
 MAIL_ENABLED  = os.getenv('MAIL_ENABLED', 'False').strip().lower() in ('true', '1', 'yes')
 
 def send_email(to_addr, subject, html_body):
-    """Send email via Gmail SMTP. Returns (True, '') or (False, error_msg)."""
     if not MAIL_ENABLED:
         return False, 'Email disabled'
     try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From']    = MAIL_SENDER
-        msg['To']      = to_addr
-        msg.attach(MIMEText(html_body, 'html'))
-        with smtplib.SMTP('smtp-relay.brevo.com', 587, timeout=30) as server:            
-            server.ehlo()
-            server.starttls()
-            server.login(MAIL_SENDER, MAIL_PASSWORD.replace(' ',''))
-            server.sendmail(MAIL_SENDER, to_addr, msg.as_string())
+        import threading
+        def _send():
+            try:
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = subject
+                msg['From']    = MAIL_SENDER
+                msg['To']      = to_addr
+                msg.attach(MIMEText(html_body, 'html'))
+                with smtplib.SMTP('smtp-relay.brevo.com', 587, timeout=30) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.login(MAIL_SENDER, MAIL_PASSWORD.replace(' ',''))
+                    server.sendmail(MAIL_SENDER, to_addr, msg.as_string())
+            except Exception as e:
+                print(f"EMAIL ERROR: {e}")
+        threading.Thread(target=_send, daemon=True).start()
         return True, ''
     except Exception as e:
         return False, str(e)
-
+        
 # ── Security headers ──────────────────────────────────────────────────────────
 @app.after_request
 def sec_headers(r):
