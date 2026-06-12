@@ -558,8 +558,8 @@ def forgot_password():
                 if ok:
                     flash(f'OTP sent to {email[:3]}***{email[email.find("@"):]}. Check your inbox.','success')
                 else:
-                    # Show OTP in flash if email fails (demo fallback)
-                    flash(f'Email failed ({err}). Demo OTP: {otp}','warning')
+                    # Don't expose OTP in response
+                    flash(f'Email sending failed. Please try again later.','warning')
 
             else:
                 # Same message whether user exists or not
