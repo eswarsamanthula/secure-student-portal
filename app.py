@@ -16,7 +16,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'fallback-key-123')
+app.secret_key = os.environ.get('SECRET_KEY')
+if not app.secret_key:
+    raise ValueError("SECRET_KEY environment variable is not set")
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 
 csrf    = CSRFProtect(app)
